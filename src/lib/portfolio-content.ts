@@ -101,14 +101,15 @@ function safeUrl(value: string | null | undefined) {
 
 export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
   const c = data.content;
-  const name = c.playerName || "Lucas";
+  const t = (key: string) => c[key] ?? "";
+  const name = t("playerName") || "Lucas";
   const out: Record<string, Dialogue> = {};
 
   out["city-sign"] = {
     speaker: "Placa",
     pages: [
       { text: `CIDADE DEV — portfólio de ${name}.` },
-      { text: c.tagline || "" },
+      { text: t("tagline") || "" },
       {
         text: "Casa = sobre mim · Lab = skills · Arena = projetos · Loja = contato.",
       },
@@ -125,24 +126,24 @@ export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
 
   out["about-intro"] = {
     speaker: name,
-    pages: [{ text: c.aboutIntro || "" }, { text: c.aboutStory || "" }],
+    pages: [{ text: t("aboutIntro") || "" }, { text: t("aboutStory") || "" }],
   };
   out["about-story"] = {
     speaker: "Escrivaninha",
-    pages: [{ text: c.aboutStory || "" }],
+    pages: [{ text: t("aboutStory") || "" }],
   };
   out["about-seeking"] = {
     speaker: "Console",
-    pages: [{ text: c.aboutSeeking || "" }],
+    pages: [{ text: t("aboutSeeking") || "" }],
   };
-  out["about-hobby"] = { speaker: "Cama", pages: [{ text: c.aboutHobby || "" }] };
+  out["about-hobby"] = { speaker: "Cama", pages: [{ text: t("aboutHobby") || "" }] };
   out["about-card"] = {
     speaker: "Quadro",
     pages: [
-      { text: `CLASSE: ${c.homeClass || "-"}` },
-      { text: `ORIGEM: ${c.homeOrigin || "-"}` },
-      { text: `FOCO: ${c.homeFocus || "-"}` },
-      { text: `MODO: ${c.homeMode || "-"}` },
+      { text: `CLASSE: ${t("homeClass") || "-"}` },
+      { text: `ORIGEM: ${t("homeOrigin") || "-"}` },
+      { text: `FOCO: ${t("homeFocus") || "-"}` },
+      { text: `MODO: ${t("homeMode") || "-"}` },
     ],
   };
   out["flavor-plant"] = {
@@ -153,7 +154,7 @@ export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
   out["skills-intro"] = {
     speaker: "Instrutor",
     pages: [
-      { text: c.skillsIntro || "" },
+      { text: t("skillsIntro") || "" },
       { text: "Cada bancada mostra um grupo de competências. Dê uma olhada!" },
     ],
   };
@@ -185,7 +186,7 @@ export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
   out["projects-intro"] = {
     speaker: "Juíza",
     pages: [
-      { text: c.projectsIntro || "" },
+      { text: t("projectsIntro") || "" },
       { text: "Toque em cada troféu para ver o projeto e os repositórios." },
     ],
   };
@@ -220,16 +221,16 @@ export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
   out["contact-intro"] = {
     speaker: "Atendente",
     pages: [
-      { text: c.contactIntro || "" },
+      { text: t("contactIntro") || "" },
       { text: "Fale com o balcão para me mandar uma mensagem." },
     ],
   };
   const contactLinks: DialogueLink[] = [];
-  if (c.contactEmail?.includes("@"))
-    contactLinks.push({ label: c.contactEmail, href: `mailto:${c.contactEmail}` });
-  const li = safeUrl(c.contactLinkedin);
+  if (t("contactEmail").includes("@"))
+    contactLinks.push({ label: t("contactEmail"), href: `mailto:${t("contactEmail")}` });
+  const li = safeUrl(t("contactLinkedin"));
   if (li) contactLinks.push({ label: "LinkedIn", href: li });
-  const gh = safeUrl(c.contactGithub);
+  const gh = safeUrl(t("contactGithub"));
   if (gh) contactLinks.push({ label: "GitHub", href: gh });
   out["contact-links"] = {
     speaker: "Prateleira",
@@ -238,7 +239,7 @@ export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
   out["contact-city"] = {
     speaker: "Terminal",
     pages: [
-      { text: `Base de operações: ${c.contactCity || "-"}` },
+      { text: `Base de operações: ${t("contactCity") || "-"}` },
       { text: "Aberto a trabalho remoto ou presencial." },
     ],
   };
