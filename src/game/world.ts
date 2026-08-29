@@ -67,17 +67,22 @@ function makeGrid(w: number, h: number, fill: string): string[][] {
   return Array.from({ length: h }, () => Array.from({ length: w }, () => fill));
 }
 
+function set(g: string[][], x: number, y: number, ch: string) {
+  const row = g[y];
+  if (row && row[x] !== undefined) row[x] = ch;
+}
+
 function fillRect(g: string[][], x: number, y: number, w: number, h: number, ch: string) {
   for (let row = y; row < y + h; row++) {
     for (let col = x; col < x + w; col++) {
-      if (g[row]?.[col] !== undefined) g[row][col] = ch;
+      set(g, col, row, ch);
     }
   }
 }
 
 function border(g: string[][], ch: string) {
   const h = g.length;
-  const w = g[0].length;
+  const w = g[0]!.length;
   fillRect(g, 0, 0, w, 1, ch);
   fillRect(g, 0, h - 1, w, 1, ch);
   fillRect(g, 0, 0, 1, h, ch);
@@ -162,7 +167,7 @@ function buildCity(): SceneDef {
     [2, 20],
     [27, 20],
   ] as const) {
-    g[y][x] = "T";
+    set(g, x, y, "T");
   }
   for (const [x, y] of [
     [13, 7],
@@ -174,7 +179,7 @@ function buildCity(): SceneDef {
     [12, 20],
     [17, 20],
   ] as const) {
-    g[y][x] = "f";
+    set(g, x, y, "f");
   }
   for (const [x, y] of [
     [13, 10],
@@ -183,7 +188,7 @@ function buildCity(): SceneDef {
     [21, 18],
     [8, 18],
   ] as const) {
-    g[y][x] = "L";
+    set(g, x, y, "L");
   }
 
   // tree border
@@ -192,7 +197,7 @@ function buildCity(): SceneDef {
   // building footprints block movement
   for (const b of CITY_BUILDINGS) {
     fillRect(g, b.x, b.y, b.w, b.h, "B");
-    g[b.door.y][b.door.x] = "r";
+    set(g, b.door.x, b.door.y, "r");
   }
 
   return {
@@ -241,7 +246,7 @@ function buildInterior(
   const g = makeGrid(w, h, ".");
   border(g, "W");
   fillRect(g, 1, 1, w - 2, 1, "V"); // decorated back wall
-  g[h - 1][6] = "C"; // exit carpet in the wall row
+  set(g, 6, h - 1, "C"); // exit carpet in the wall row
 
   return {
     id,
