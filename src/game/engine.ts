@@ -235,13 +235,13 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       return o;
     };
     part(-8, -2, 16, 16, [72, 118, 220]); // body
-    part(-6, 12, 5, 5, [48, 44, 58], "legL");
-    part(1, 12, 5, 5, [48, 44, 58], "legR");
+    const legL = part(-6, 12, 5, 5, [48, 44, 58], "legL");
+    const legR = part(1, 12, 5, 5, [48, 44, 58], "legR");
     part(-9, -16, 18, 15, [248, 216, 184]); // head
     part(-11, -20, 22, 8, [206, 66, 66]); // cap
     const eyeL = part(-6, -9, 3, 4, [40, 34, 46], "eye");
     const eyeR = part(2, -9, 3, 4, [40, 34, 46], "eye");
-    return { obj: p, eyes: [eyeL, eyeR] as GameObj[] };
+    return { obj: p, eyes: [eyeL, eyeR] as GameObj[], legL, legR };
   }
 
   function isSolid(rows: string[], col: number, row: number) {
@@ -291,7 +291,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     for (const item of scene.interactables) drawFurniture(item.kind, item.x, item.y);
 
     const spawn = arg.spawn ?? scene.spawn;
-    const { obj: player, eyes } = makePlayer(spawn);
+    const { obj: player, eyes, legL, legR } = makePlayer(spawn);
 
     // camera
     k.onUpdate(() => {
@@ -352,18 +352,13 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         state.facing = player.facing;
         player.step += k.dt() * 10;
         const bob = Math.sin(player.step * 2) * 1.5;
-        player.get("legL")[0]?.let?.call?.(null);
-        const legL = player.get("legL")[0];
-        const legR = player.get("legR")[0];
-        if (legL) legL.pos.y = 12 + bob;
-        if (legR) legR.pos.y = 12 - bob;
+        legL.pos.y = 12 + bob;
+        legR.pos.y = 12 - bob;
         for (const e of eyes) e.hidden = player.facing === "up";
       } else {
         player.step = 0;
-        const legL = player.get("legL")[0];
-        const legR = player.get("legR")[0];
-        if (legL) legL.pos.y = 12;
-        if (legR) legR.pos.y = 12;
+        legL.pos.y = 12;
+        legR.pos.y = 12;
       }
 
       // nearest action
