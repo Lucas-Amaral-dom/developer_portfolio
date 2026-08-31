@@ -432,7 +432,10 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
   k.go("play", { id: "city" });
 
   return {
-    destroy: () => k.quit(),
+    destroy: () => {
+      k.quit();
+      canvas.remove();
+    },
     setPaused: (paused) => {
       state.paused = paused;
       if (paused) state.dir = null;
