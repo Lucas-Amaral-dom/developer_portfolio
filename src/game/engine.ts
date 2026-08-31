@@ -47,14 +47,21 @@ const PALETTE: Record<string, [number, number, number]> = {
 };
 
 export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
+  // Own the canvas so it always fills the React container instead of the window.
+  const canvas = document.createElement("canvas");
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
+  canvas.style.display = "block";
+  root.appendChild(canvas);
+
   const k: KAPLAYCtx = kaplay({
-    root,
+    canvas,
     width: 480,
     height: 320,
     background: [46, 62, 48],
     global: false,
     crisp: true,
-    pixelDensity: 2,
+    pixelDensity: 1,
     stretch: true,
     letterbox: true,
     debug: false,
@@ -425,7 +432,10 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
   k.go("play", { id: "city" });
 
   return {
-    destroy: () => k.quit(),
+    destroy: () => {
+      k.quit();
+      canvas.remove();
+    },
     setPaused: (paused) => {
       state.paused = paused;
       if (paused) state.dir = null;
