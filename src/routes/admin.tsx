@@ -79,7 +79,7 @@ function ClaimAdmin() {
     setBusy(true);
     const { data, error } = await supabase.rpc("claim_first_admin");
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (data) {
       toast.success("Você agora é administrador!");
       window.location.reload();
@@ -178,7 +178,7 @@ function TextsTab({
     const rows = CONTENT_FIELDS.map((f) => ({ key: f.key, value: draft[f.key] ?? "" }));
     const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Textos salvos na nuvem!");
     onSaved();
   }
@@ -225,7 +225,7 @@ function SkillsTab({ skills, onSaved }: { skills: SkillRow[]; onSaved: () => voi
     setBusy(true);
     const { error } = await supabase.from("skills").upsert(rows);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Skills salvas!");
     onSaved();
   }
@@ -242,14 +242,14 @@ function SkillsTab({ skills, onSaved }: { skills: SkillRow[]; onSaved: () => voi
       })
       .select()
       .single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setRows([...rows, data as SkillRow]);
     onSaved();
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from("skills").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setRows(rows.filter((r) => r.id !== id));
     onSaved();
   }
@@ -325,7 +325,7 @@ function ProjectsTab({ projects, onSaved }: { projects: ProjectRow[]; onSaved: (
     setBusy(true);
     const { error } = await supabase.from("projects").upsert(rows);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Projetos salvos!");
     onSaved();
   }
@@ -341,14 +341,14 @@ function ProjectsTab({ projects, onSaved }: { projects: ProjectRow[]; onSaved: (
       })
       .select()
       .single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setRows([...rows, data as ProjectRow]);
     onSaved();
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from("projects").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setRows(rows.filter((r) => r.id !== id));
     onSaved();
   }
