@@ -28,8 +28,10 @@ export interface PortfolioData {
 
 export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }[] = [
   { key: "playerName", label: "Seu nome" },
+  { key: "photoUrl", label: "Foto (URL https)" },
   { key: "tagline", label: "Linha de apresentação" },
   { key: "heroSub", label: "Subtítulo da tela de título" },
+
   { key: "homeClass", label: "Classe" },
   { key: "homeOrigin", label: "Origem" },
   { key: "homeFocus", label: "Foco" },
@@ -49,7 +51,11 @@ export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }
 
 export const portfolioQuery = {
   queryKey: ["portfolio"] as const,
+  // keeps the city in sync with the admin panel without a page reload
+  refetchOnWindowFocus: true,
+  refetchInterval: 8000,
   queryFn: async (): Promise<PortfolioData> => {
+
     const [contentRes, skillsRes, projectsRes] = await Promise.all([
       supabase.from("site_content").select("key,value"),
       supabase.from("skills").select("*").order("sort_order"),
