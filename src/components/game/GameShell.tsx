@@ -43,7 +43,7 @@ export default function GameShell() {
     );
   }
 
-  return <World dialogues={dialogues} />;
+  return <World dialogues={dialogues} data={data} />;
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
