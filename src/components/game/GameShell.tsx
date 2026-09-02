@@ -167,7 +167,7 @@ function World({
 
       <div className="relative flex-1 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center p-2">
-          <div ref={hostRef} className="aspect-[10/7] max-h-full w-full max-w-[1120px]" />
+          <div ref={hostRef} className="aspect-[15/11] max-h-full w-full max-w-[960px]" />
         </div>
 
 
