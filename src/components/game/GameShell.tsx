@@ -211,10 +211,18 @@ function World({
           </p>
         </div>
         {scene?.indoor ? (
-          <PixelButton variant="secondary" onClick={() => gameRef.current?.goTo("city")}>
-            ← Cidade
-          </PixelButton>
+          <div className="flex gap-2">
+            <PixelButton
+              onClick={() => setScreen(scene.id as Exclude<SceneId, "city">)}
+            >
+              Ver dados
+            </PixelButton>
+            <PixelButton variant="secondary" onClick={() => gameRef.current?.goTo("city")}>
+              ← Cidade
+            </PixelButton>
+          </div>
         ) : (
+
           <Link
             to="/admin"
             className="pixel-font pixel-press bg-secondary text-secondary-foreground px-3 py-2 text-[10px] uppercase"
