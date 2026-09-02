@@ -56,8 +56,8 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
   const k: KAPLAYCtx = kaplay({
     canvas,
-    width: 480,
-    height: 320,
+    width: 640,
+    height: 448,
     background: [46, 62, 48],
     global: false,
     crisp: true,
