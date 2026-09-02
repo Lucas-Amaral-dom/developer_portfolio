@@ -52,12 +52,17 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
   canvas.style.width = "100%";
   canvas.style.height = "100%";
   canvas.style.display = "block";
+  canvas.style.outline = "none";
+  canvas.tabIndex = 0;
   root.appendChild(canvas);
+  // keyboard events are bound to the canvas, so it must hold focus
+  canvas.addEventListener("pointerdown", () => canvas.focus());
+  requestAnimationFrame(() => canvas.focus());
 
   const k: KAPLAYCtx = kaplay({
     canvas,
-    width: 480,
-    height: 320,
+    width: 960,
+    height: 704,
     background: [46, 62, 48],
     global: false,
     crisp: true,

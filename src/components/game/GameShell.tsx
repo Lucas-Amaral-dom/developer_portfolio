@@ -4,7 +4,9 @@ import { Link } from "@tanstack/react-router";
 
 import { createGame, type Dir, type GameHandle } from "@/game/engine";
 import { BADGES, type SceneDef, type SceneId } from "@/game/world";
-import { buildDialogues, portfolioQuery } from "@/lib/portfolio-content";
+import { buildDialogues, portfolioQuery, type PortfolioData } from "@/lib/portfolio-content";
+import { SceneScreen } from "@/components/game/SceneScreen";
+
 import { DialogueBox } from "@/components/pixel/DialogueBox";
 import { ContactForm } from "@/components/pixel/ContactForm";
 import { DPad } from "@/components/pixel/DPad";
@@ -43,7 +45,7 @@ export default function GameShell() {
     );
   }
 
-  return <World dialogues={dialogues} />;
+  return <World dialogues={dialogues} data={data} />;
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
@@ -97,13 +99,20 @@ function TitleScreen({
   );
 }
 
-function World({ dialogues }: { dialogues: ReturnType<typeof buildDialogues> }) {
+function World({
+  dialogues,
+  data,
+}: {
+  dialogues: ReturnType<typeof buildDialogues>;
+  data: PortfolioData;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<GameHandle | null>(null);
   const [scene, setScene] = useState<SceneDef | null>(null);
   const [prompt, setPrompt] = useState<{ label: string; action: string } | null>(null);
   const [dialogueId, setDialogueId] = useState<string | null>(null);
   const [badges, setBadges] = useState<SceneId[]>([]);
+  const [screen, setScreen] = useState<Exclude<SceneId, "city"> | null>(null);
 
   const handleDialogue = useCallback((id: string) => setDialogueId(id), []);
 
@@ -113,6 +122,7 @@ function World({ dialogues }: { dialogues: ReturnType<typeof buildDialogues> }) 
       onDialogue: handleDialogue,
       onScene: (s) => {
         setScene(s);
+        setScreen(s.id === "city" ? null : (s.id as Exclude<SceneId, "city">));
         setBadges((prev) =>
           BADGES.some((b) => b.scene === s.id) && !prev.includes(s.id) ? [...prev, s.id] : prev,
         );
@@ -127,10 +137,11 @@ function World({ dialogues }: { dialogues: ReturnType<typeof buildDialogues> }) 
   }, [handleDialogue]);
 
   useEffect(() => {
-    gameRef.current?.setPaused(dialogueId !== null);
-  }, [dialogueId]);
+    gameRef.current?.setPaused(dialogueId !== null || screen !== null);
+  }, [dialogueId, screen]);
 
   const dialogue = dialogueId ? dialogues[dialogueId] : undefined;
+
 
   return (
     <div className="relative flex min-h-screen flex-col">
@@ -154,8 +165,11 @@ function World({ dialogues }: { dialogues: ReturnType<typeof buildDialogues> }) 
         </div>
       </header>
 
-      <div className="relative flex-1">
-        <div ref={hostRef} className="absolute inset-0" />
+      <div className="relative flex-1 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div ref={hostRef} className="aspect-[15/11] max-h-full w-full max-w-[960px]" />
+        </div>
+
 
         {prompt && !dialogue && (
           <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
@@ -173,14 +187,17 @@ function World({ dialogues }: { dialogues: ReturnType<typeof buildDialogues> }) 
           </div>
         )}
 
-        {dialogue && (
+        {dialogue && !screen && (
           <DialogueBox
             dialogue={dialogue}
             onClose={() => setDialogueId(null)}
             formSlot={<ContactForm />}
           />
         )}
+
+        {screen && <SceneScreen scene={screen} data={data} onClose={() => setScreen(null)} />}
       </div>
+
 
       <footer className="border-border flex items-center justify-between gap-4 border-t-4 px-3 py-3">
         <DPad
@@ -194,10 +211,18 @@ function World({ dialogues }: { dialogues: ReturnType<typeof buildDialogues> }) 
           </p>
         </div>
         {scene?.indoor ? (
-          <PixelButton variant="secondary" onClick={() => gameRef.current?.goTo("city")}>
-            ← Cidade
-          </PixelButton>
+          <div className="flex gap-2">
+            <PixelButton
+              onClick={() => setScreen(scene.id as Exclude<SceneId, "city">)}
+            >
+              Ver dados
+            </PixelButton>
+            <PixelButton variant="secondary" onClick={() => gameRef.current?.goTo("city")}>
+              ← Cidade
+            </PixelButton>
+          </div>
         ) : (
+
           <Link
             to="/admin"
             className="pixel-font pixel-press bg-secondary text-secondary-foreground px-3 py-2 text-[10px] uppercase"
