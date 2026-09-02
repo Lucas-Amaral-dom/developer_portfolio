@@ -165,8 +165,11 @@ function World({
         </div>
       </header>
 
-      <div className="relative flex-1">
-        <div ref={hostRef} className="absolute inset-0" />
+      <div className="relative flex-1 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div ref={hostRef} className="aspect-[3/2] max-h-full w-full max-w-[960px]" />
+        </div>
+
 
         {prompt && !dialogue && (
           <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
@@ -184,14 +187,17 @@ function World({
           </div>
         )}
 
-        {dialogue && (
+        {dialogue && !screen && (
           <DialogueBox
             dialogue={dialogue}
             onClose={() => setDialogueId(null)}
             formSlot={<ContactForm />}
           />
         )}
+
+        {screen && <SceneScreen scene={screen} data={data} onClose={() => setScreen(null)} />}
       </div>
+
 
       <footer className="border-border flex items-center justify-between gap-4 border-t-4 px-3 py-3">
         <DPad
