@@ -6,9 +6,7 @@ export const TILE = 32;
 export type SceneId = "city" | "home" | "lab" | "arena" | "shop";
 
 export type FurnitureKind =
-  | "npc-dev"
-  | "npc-clerk"
-  | "npc-mentor"
+  | "npc"
   | "desk"
   | "shelf"
   | "plant"
@@ -17,13 +15,23 @@ export type FurnitureKind =
   | "painting"
   | "bed"
   | "rug"
-  | "console";
+  | "console"
+  | "swing"
+  | "slide"
+  | "sandbox"
+  | "bench"
+  | "fountain"
+  | "sign";
 
 export interface Interactable {
   /** tile coords of the object itself */
   x: number;
   y: number;
   kind: FurnitureKind;
+  /** row of the NPC spritesheet (0-12), only for kind "npc" */
+  npc?: number;
+  /** which way the NPC looks: down | up | left | right */
+  face?: "down" | "up" | "left" | "right";
   /** floating label above the object */
   label: string;
   /** id resolved to dialogue pages by the React layer */
@@ -144,31 +152,51 @@ export const CITY_BUILDINGS: BuildingDef[] = [
 function buildCity(): SceneDef {
   const g = makeGrid(CITY_W, CITY_H, "g");
 
-  // roads
-  fillRect(g, 1, 8, CITY_W - 2, 2, "r");
-  fillRect(g, 1, 18, CITY_W - 2, 2, "r");
-  fillRect(g, 14, 8, 2, 12, "r");
-  fillRect(g, 5, 7, 1, 2, "r");
-  fillRect(g, 23, 7, 1, 2, "r");
-  fillRect(g, 14, 17, 1, 2, "r");
+  // stone paths (main streets)
+  fillRect(g, 1, 8, CITY_W - 2, 2, "p");
+  fillRect(g, 1, 18, CITY_W - 2, 2, "p");
+  fillRect(g, 14, 8, 2, 12, "p");
+  fillRect(g, 5, 7, 1, 2, "p");
+  fillRect(g, 23, 7, 1, 2, "p");
+  fillRect(g, 14, 17, 1, 2, "p");
+  // side paths
+  fillRect(g, 4, 10, 1, 8, "p");
+  fillRect(g, 24, 10, 1, 8, "p");
+  fillRect(g, 18, 12, 1, 6, "p");
 
-  // pond
-  fillRect(g, 3, 12, 6, 4, "w");
-  fillRect(g, 3, 11, 6, 1, "s"); // sand shore
+  // pond with sandy shore (right side, like the reference town)
+  fillRect(g, 21, 11, 7, 5, "s");
+  fillRect(g, 22, 12, 5, 3, "w");
 
-  // decoration
+  // playground (left side): sand floor + fence
+  fillRect(g, 6, 11, 7, 6, "d");
+  fillRect(g, 6, 10, 7, 1, "h");
+  fillRect(g, 6, 11, 1, 6, "h");
+  fillRect(g, 12, 11, 1, 6, "h");
+  set(g, 9, 10, "d"); // playground entrance
+
+  // flower gardens with fences
+  fillRect(g, 26, 3, 3, 3, "f");
+  fillRect(g, 26, 6, 3, 1, "h");
+  fillRect(g, 1, 11, 3, 3, "f");
+
+  // trees
   for (const [x, y] of [
-    [10, 10],
-    [10, 14],
+    [10, 20],
     [19, 11],
-    [19, 15],
-    [25, 12],
-    [25, 15],
+    [19, 16],
+    [28, 11],
+    [28, 16],
+    [2, 16],
     [2, 20],
     [27, 20],
+    [20, 20],
+    [9, 3],
+    [18, 3],
   ] as const) {
     set(g, x, y, "T");
   }
+  // flower patches
   for (const [x, y] of [
     [13, 7],
     [16, 7],
@@ -178,15 +206,18 @@ function buildCity(): SceneDef {
     [25, 7],
     [12, 20],
     [17, 20],
+    [5, 20],
   ] as const) {
     set(g, x, y, "f");
   }
+  // lamp posts
   for (const [x, y] of [
     [13, 10],
     [17, 10],
     [13, 16],
     [21, 18],
     [8, 18],
+    [26, 10],
   ] as const) {
     set(g, x, y, "L");
   }
@@ -197,7 +228,7 @@ function buildCity(): SceneDef {
   // building footprints block movement
   for (const b of CITY_BUILDINGS) {
     fillRect(g, b.x, b.y, b.w, b.h, "B");
-    set(g, b.door.x, b.door.y, "r");
+    set(g, b.door.x, b.door.y, "p");
   }
 
   return {
@@ -206,23 +237,52 @@ function buildCity(): SceneDef {
     grid: toRows(g),
     spawn: { x: 15, y: 11 },
     indoor: false,
-    hint: "Use as setas / WASD para andar. Fique na porta e aperte A.",
+    hint: "Setas / WASD para andar. As portas abrem sozinhas — aperte A na porta para entrar.",
     buildings: CITY_BUILDINGS,
     interactables: [
-      {
-        x: 17,
-        y: 11,
-        kind: "console",
-        label: "Placa da cidade",
-        dialogue: "city-sign",
-      },
+      { x: 17, y: 12, kind: "sign", label: "Placa da cidade", dialogue: "city-sign" },
       {
         x: 12,
-        y: 11,
-        kind: "npc-mentor",
+        y: 9,
+        kind: "npc",
+        npc: 4,
+        face: "down",
         label: "Guia",
         dialogue: "city-guide",
       },
+      {
+        x: 9,
+        y: 14,
+        kind: "npc",
+        npc: 2,
+        face: "left",
+        label: "Garoto do parquinho",
+        dialogue: "city-kid",
+      },
+      {
+        x: 20,
+        y: 13,
+        kind: "npc",
+        npc: 5,
+        face: "right",
+        label: "Moça do lago",
+        dialogue: "city-lake",
+      },
+      {
+        x: 17,
+        y: 18,
+        kind: "npc",
+        npc: 8,
+        face: "up",
+        label: "Senhor da praça",
+        dialogue: "city-oldman",
+      },
+      { x: 7, y: 12, kind: "swing", label: "Balanço", dialogue: "city-playground" },
+      { x: 11, y: 12, kind: "slide", label: "Escorregador", dialogue: "city-playground" },
+      { x: 9, y: 16, kind: "sandbox", label: "Caixa de areia", dialogue: "city-playground" },
+      { x: 16, y: 20, kind: "bench", label: "Banco", dialogue: "city-bench" },
+      { x: 18, y: 20, kind: "bench", label: "Banco", dialogue: "city-bench" },
+      { x: 15, y: 11, kind: "fountain", label: "Fonte", dialogue: "city-fountain" },
     ],
     exits: CITY_BUILDINGS.map((b) => ({
       x: b.door.x,
@@ -267,7 +327,7 @@ export const SCENES: Record<SceneId, SceneDef> = {
     "home",
     "Casa — Sobre mim",
     [
-      { x: 6, y: 4, kind: "npc-dev", label: "Lucas", dialogue: "about-intro" },
+      { x: 6, y: 4, kind: "npc", npc: 2, face: "down", label: "Lucas", dialogue: "about-intro" },
       { x: 2, y: 2, kind: "painting", label: "Quadro", dialogue: "about-card" },
       { x: 10, y: 2, kind: "bed", label: "Cama", dialogue: "about-hobby" },
       { x: 4, y: 6, kind: "desk", label: "Escrivaninha", dialogue: "about-story" },
@@ -284,7 +344,15 @@ export const SCENES: Record<SceneId, SceneDef> = {
       { x: 5, y: 3, kind: "desk", label: "Bancada 2", dialogue: "skill-web" },
       { x: 8, y: 3, kind: "desk", label: "Bancada 3", dialogue: "skill-data" },
       { x: 11, y: 3, kind: "desk", label: "Bancada 4", dialogue: "skill-quality" },
-      { x: 6, y: 6, kind: "npc-mentor", label: "Instrutor", dialogue: "skills-intro" },
+      {
+        x: 6,
+        y: 6,
+        kind: "npc",
+        npc: 9,
+        face: "down",
+        label: "Instrutor",
+        dialogue: "skills-intro",
+      },
       { x: 1, y: 6, kind: "shelf", label: "Estante", dialogue: "skills-list" },
     ],
     "Cada bancada mostra um grupo de competências.",
@@ -296,7 +364,15 @@ export const SCENES: Record<SceneId, SceneDef> = {
       { x: 3, y: 3, kind: "trophy", label: "Projeto 1", dialogue: "project-0" },
       { x: 6, y: 3, kind: "trophy", label: "Projeto 2", dialogue: "project-1" },
       { x: 9, y: 3, kind: "trophy", label: "Projeto 3", dialogue: "project-2" },
-      { x: 11, y: 6, kind: "npc-mentor", label: "Juíza", dialogue: "projects-intro" },
+      {
+        x: 11,
+        y: 6,
+        kind: "npc",
+        npc: 6,
+        face: "left",
+        label: "Juíza",
+        dialogue: "projects-intro",
+      },
       { x: 1, y: 6, kind: "shelf", label: "Mural", dialogue: "projects-all" },
     ],
     "Cada troféu é um projeto, com links pros repositórios.",
@@ -306,7 +382,15 @@ export const SCENES: Record<SceneId, SceneDef> = {
     "Loja — Contato",
     [
       { x: 6, y: 3, kind: "counter", label: "Balcão", dialogue: "contact-form" },
-      { x: 6, y: 2, kind: "npc-clerk", label: "Atendente", dialogue: "contact-intro" },
+      {
+        x: 6,
+        y: 2,
+        kind: "npc",
+        npc: 1,
+        face: "down",
+        label: "Atendente",
+        dialogue: "contact-intro",
+      },
       { x: 2, y: 6, kind: "shelf", label: "Prateleira", dialogue: "contact-links" },
       { x: 10, y: 6, kind: "plant", label: "Planta", dialogue: "flavor-plant" },
       { x: 10, y: 3, kind: "console", label: "Terminal", dialogue: "contact-city" },
@@ -315,7 +399,7 @@ export const SCENES: Record<SceneId, SceneDef> = {
   ),
 };
 
-export const SOLID_TILES = new Set(["T", "w", "B", "W", "V"]);
+export const SOLID_TILES = new Set(["T", "w", "B", "W", "V", "h"]);
 
 export const BADGES: { scene: SceneId; name: string }[] = [
   { scene: "home", name: "Insígnia da Casa" },

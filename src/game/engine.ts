@@ -1,12 +1,21 @@
 import kaplay from "kaplay";
 import type { KAPLAYCtx, GameObj } from "kaplay";
 
-import { SCENES, SOLID_TILES, TILE, type FurnitureKind, type SceneDef, type SceneId } from "./world";
+import {
+  SCENES,
+  SOLID_TILES,
+  TILE,
+  type FurnitureKind,
+  type Interactable,
+  type SceneDef,
+  type SceneId,
+} from "./world";
 
 import homeSprite from "@/assets/build-home.png";
 import labSprite from "@/assets/build-lab.png";
 import arenaSprite from "@/assets/build-arena.png";
 import shopSprite from "@/assets/build-shop.png";
+import npcsSheet from "@/assets/npcs.png";
 
 export type Dir = "up" | "down" | "left" | "right";
 
@@ -31,11 +40,29 @@ const SPRITES: Record<string, string> = {
   shop: shopSprite,
 };
 
+/** rows of the Pokémon-style NPC sheet (9 frames each) */
+const NPC_COLS = 9;
+const PLAYER_ROW = 11;
+
+/** frame index inside the sliced sheet */
+const frameOf = (row: number, i: number) => row * NPC_COLS + i;
+
+/** idle + walk frames per facing (sheet order: down, up, side, ...) */
+const FRAMES: Record<Dir, { idle: number; walk: [number, number]; flip: boolean }> = {
+  down: { idle: 0, walk: [3, 4], flip: false },
+  up: { idle: 1, walk: [5, 6], flip: false },
+  left: { idle: 2, walk: [7, 8], flip: false },
+  right: { idle: 2, walk: [7, 8], flip: true },
+};
+
 const PALETTE: Record<string, [number, number, number]> = {
   g: [126, 197, 108],
+  p: [222, 205, 168],
   r: [222, 205, 168],
   w: [92, 168, 224],
   s: [235, 218, 168],
+  d: [226, 196, 146],
+  h: [180, 138, 96],
   T: [96, 168, 96],
   f: [126, 197, 108],
   L: [126, 197, 108],
@@ -74,6 +101,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
   });
 
   for (const [name, src] of Object.entries(SPRITES)) k.loadSprite(name, src);
+  k.loadSprite("npcs", npcsSheet, { sliceX: NPC_COLS, sliceY: 13 });
 
   const state = {
     paused: false,
@@ -96,8 +124,21 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       k.add([k.rect(4, 4), k.pos(px + 7, py + 9), k.color(150, 214, 122), k.z(1)]);
       k.add([k.rect(3, 3), k.pos(px + 21, py + 20), k.color(104, 178, 92), k.z(1)]);
     }
-    if (ch === "r") {
-      k.add([k.rect(TILE, 3), k.pos(px, py + 15), k.color(236, 222, 190), k.z(1)]);
+    if (ch === "p" || ch === "r") {
+      // cobbled street
+      k.add([k.rect(TILE - 4, 2), k.pos(px + 2, py + 14), k.color(236, 222, 190), k.z(1)]);
+      k.add([k.rect(2, TILE - 6), k.pos(px + 15, py + 3), k.color(208, 190, 154), k.z(1)]);
+    }
+    if (ch === "d") {
+      k.add([k.rect(4, 3), k.pos(px + 6, py + 12), k.color(210, 176, 128), k.z(1)]);
+      k.add([k.rect(3, 3), k.pos(px + 22, py + 22), k.color(238, 212, 168), k.z(1)]);
+    }
+    if (ch === "h") {
+      // wooden fence
+      k.add([k.rect(TILE, 4), k.pos(px, py + 10), k.color(150, 108, 70), k.z(6)]);
+      k.add([k.rect(TILE, 4), k.pos(px, py + 20), k.color(150, 108, 70), k.z(6)]);
+      k.add([k.rect(5, 24), k.pos(px + 4, py + 5), k.color(126, 88, 56), k.z(7)]);
+      k.add([k.rect(5, 24), k.pos(px + 22, py + 5), k.color(126, 88, 56), k.z(7)]);
     }
     if (ch === "w") {
       k.add([k.rect(18, 3), k.pos(px + 5, py + 8), k.color(178, 226, 252), k.z(1)]);
@@ -142,9 +183,24 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     }
   }
 
-  function drawFurniture(kind: FurnitureKind, col: number, row: number) {
+  function drawFurniture(item: Interactable) {
+    const { kind, x: col, y: row } = item;
     const px = col * TILE;
     const py = row * TILE;
+
+    if (kind === "npc") {
+      const face = item.face ?? "down";
+      const f = FRAMES[face];
+      k.add([
+        k.sprite("npcs", { frame: frameOf(item.npc ?? 0, f.idle), flipX: f.flip }),
+        k.pos(px + TILE / 2, py + TILE / 2 + 6),
+        k.anchor("bot"),
+        k.scale(2),
+        k.z(20),
+      ]);
+      return;
+    }
+
     const box = (
       x: number,
       y: number,
@@ -161,19 +217,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         k.z(z),
       ]);
 
-    switch (kind) {
-      case "npc-dev":
-      case "npc-clerk":
-      case "npc-mentor": {
-        const shirt: [number, number, number] =
-          kind === "npc-dev" ? [86, 132, 232] : kind === "npc-clerk" ? [232, 118, 132] : [246, 210, 96];
-        box(9, 14, 14, 16, shirt, 9);
-        box(8, 2, 16, 14, [246, 214, 182], 9);
-        box(6, 0, 20, 7, [64, 48, 44], 10);
-        k.add([k.rect(3, 3), k.pos(px + 12, py + 9), k.color(40, 34, 46), k.z(11)]);
-        k.add([k.rect(3, 3), k.pos(px + 18, py + 9), k.color(40, 34, 46), k.z(11)]);
-        break;
-      }
+    switch (kind as FurnitureKind) {
       case "desk":
         box(1, 12, 30, 6, [156, 112, 76]);
         box(3, 18, 5, 12, [126, 90, 60]);
@@ -218,42 +262,74 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         box(7, 11, 18, 12, [126, 226, 196], 9);
         k.add([k.rect(4, 4), k.pos(px + 22, py + 25), k.color(238, 108, 108), k.z(10)]);
         break;
+      case "swing": {
+        box(2, 2, 4, 28, [168, 120, 76], 9);
+        box(26, 2, 4, 28, [168, 120, 76], 9);
+        box(2, 2, 28, 4, [186, 138, 90], 10);
+        const seat = k.add([
+          k.rect(12, 4, { radius: 1 }),
+          k.pos(px + 10, py + 20),
+          k.color(214, 92, 92),
+          k.outline(2, k.rgb(40, 34, 46)),
+          k.z(11),
+        ]);
+        k.onUpdate(() => {
+          seat.pos.x = px + 10 + Math.sin(k.time() * 2) * 4;
+        });
+        break;
+      }
+      case "slide":
+        box(20, 2, 8, 26, [156, 112, 76], 9);
+        box(4, 8, 24, 6, [246, 196, 92], 10);
+        box(2, 12, 8, 18, [214, 138, 82], 9);
+        break;
+      case "sandbox":
+        box(0, 6, TILE, 24, [238, 214, 162], 6);
+        box(3, 9, 26, 18, [246, 228, 186], 7);
+        k.add([k.rect(8, 6), k.pos(px + 12, py + 16), k.color(206, 176, 128), k.z(8)]);
+        break;
+      case "bench":
+        box(1, 14, 30, 6, [168, 120, 76]);
+        box(1, 8, 30, 5, [186, 138, 90], 9);
+        box(4, 20, 4, 10, [126, 88, 56]);
+        box(24, 20, 4, 10, [126, 88, 56]);
+        break;
+      case "fountain": {
+        box(0, 6, TILE, 24, [186, 190, 198], 6);
+        box(4, 10, 24, 16, [108, 178, 226], 7);
+        const jet = k.add([
+          k.rect(6, 12, { radius: 3 }),
+          k.pos(px + 13, py + 6),
+          k.color(196, 232, 252),
+          k.z(9),
+        ]);
+        k.onUpdate(() => {
+          jet.pos.y = py + 4 + Math.sin(k.time() * 4) * 3;
+        });
+        break;
+      }
+      case "sign":
+        box(13, 14, 6, 16, [140, 100, 66], 9);
+        box(2, 2, 28, 16, [196, 150, 100], 10);
+        k.add([k.rect(20, 3), k.pos(px + 6, py + 7), k.color(90, 62, 40), k.z(11)]);
+        k.add([k.rect(14, 3), k.pos(px + 6, py + 13), k.color(90, 62, 40), k.z(11)]);
+        break;
+      default:
+        break;
     }
   }
 
   function makePlayer(pos: { x: number; y: number }) {
     const p = k.add([
+      k.sprite("npcs", { frame: frameOf(PLAYER_ROW, 0) }),
       k.pos(pos.x * TILE + TILE / 2, pos.y * TILE + TILE / 2),
       k.anchor("center"),
+      k.scale(2),
       k.z(30),
       { facing: "down" as Dir, step: 0 },
       "player",
     ]);
-    const part = (
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      c: [number, number, number],
-      tag?: string,
-    ) => {
-      const o = p.add([
-        k.rect(w, h, { radius: 2 }),
-        k.pos(x, y),
-        k.color(c[0], c[1], c[2]),
-        k.z(1),
-        ...(tag ? [tag] : []),
-      ]);
-      return o;
-    };
-    part(-8, -2, 16, 16, [72, 118, 220]); // body
-    const legL = part(-6, 12, 5, 5, [48, 44, 58], "legL");
-    const legR = part(1, 12, 5, 5, [48, 44, 58], "legR");
-    part(-9, -16, 18, 15, [248, 216, 184]); // head
-    part(-11, -20, 22, 8, [206, 66, 66]); // cap
-    const eyeL = part(-6, -9, 3, 4, [40, 34, 46], "eye");
-    const eyeR = part(2, -9, 3, 4, [40, 34, 46], "eye");
-    return { obj: p, eyes: [eyeL, eyeR] as GameObj[], legL, legR };
+    return p as GameObj;
   }
 
   function isSolid(rows: string[], col: number, row: number) {
@@ -276,7 +352,15 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       }
     }
 
-    // buildings
+    // buildings + automatic sliding doors
+    const doors: {
+      x: number;
+      y: number;
+      left: GameObj;
+      right: GameObj;
+      open: number;
+    }[] = [];
+
     for (const b of scene.buildings) {
       const w = b.w * TILE;
       k.add([
@@ -285,12 +369,33 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         k.scale((w + 12) / 820),
         k.z(12),
       ]);
+
+      const dx = b.door.x * TILE;
+      const dy = b.door.y * TILE - TILE;
+      // dark doorway behind the leaves
+      k.add([k.rect(TILE - 4, TILE + 2), k.pos(dx + 2, dy - 2), k.color(38, 30, 34), k.z(13)]);
       k.add([
-        k.rect(TILE, 5),
-        k.pos(b.door.x * TILE, b.door.y * TILE - 4),
-        k.color(96, 64, 44),
-        k.z(6),
+        k.rect(TILE, 6),
+        k.pos(dx, dy - 8),
+        k.color(126, 88, 56),
+        k.outline(2, k.rgb(52, 38, 30)),
+        k.z(16),
       ]);
+      const leaf = (offX: number) =>
+        k.add([
+          k.rect(13, TILE - 2, { radius: 1 }),
+          k.pos(dx + offX, dy),
+          k.color(146, 198, 226),
+          k.outline(2, k.rgb(66, 92, 116)),
+          k.z(15),
+        ]);
+      const left = leaf(2);
+      const right = leaf(17);
+      doors.push({ x: b.door.x, y: b.door.y, left, right, open: 0 });
+
+      // door mat
+      k.add([k.rect(TILE - 6, 6), k.pos(dx + 3, b.door.y * TILE + 4), k.color(206, 92, 92), k.z(6)]);
+
       k.add([
         k.text(b.sign, { size: 9, font: "monospace", align: "center", width: w + 60 }),
         k.pos(b.x * TILE + w / 2, (b.y + b.h) * TILE + 4),
@@ -300,10 +405,10 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       ]);
     }
 
-    for (const item of scene.interactables) drawFurniture(item.kind, item.x, item.y);
+    for (const item of scene.interactables) drawFurniture(item);
 
     const spawn = arg.spawn ?? scene.spawn;
-    const { obj: player, eyes, legL, legR } = makePlayer(spawn);
+    const player = makePlayer(spawn) as GameObj & { facing: Dir; step: number };
 
     // camera
     k.onUpdate(() => {
@@ -323,6 +428,18 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     const SPEED = 116;
 
     k.onUpdate(() => {
+      // doors slide open when the player is close, even while paused
+      const ptxD = player.pos.x / TILE - 0.5;
+      const ptyD = player.pos.y / TILE - 0.5;
+      for (const d of doors) {
+        const near = Math.hypot(d.x - ptxD, d.y - ptyD) < 1.8;
+        d.open += ((near ? 1 : 0) - d.open) * Math.min(1, k.dt() * 8);
+        const w = Math.max(1, 13 * (1 - d.open));
+        d.left.width = w;
+        d.right.width = w;
+        d.right.pos.x = d.x * TILE + 30 - w;
+      }
+
       if (state.paused) return;
 
       let dx = 0;
@@ -362,15 +479,15 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
         player.facing = dy > 0 ? "down" : dy < 0 ? "up" : dx > 0 ? "right" : "left";
         state.facing = player.facing;
-        player.step += k.dt() * 10;
-        const bob = Math.sin(player.step * 2) * 1.5;
-        legL.pos.y = 12 + bob;
-        legR.pos.y = 12 - bob;
-        for (const e of eyes) e.hidden = player.facing === "up";
+        player.step += k.dt() * 7;
+        const f = FRAMES[player.facing];
+        player.frame = frameOf(PLAYER_ROW, f.walk[Math.floor(player.step) % 2]);
+        player.flipX = f.flip;
       } else {
         player.step = 0;
-        legL.pos.y = 12;
-        legR.pos.y = 12;
+        const f = FRAMES[player.facing];
+        player.frame = frameOf(PLAYER_ROW, f.idle);
+        player.flipX = f.flip;
       }
 
       // nearest action
@@ -383,7 +500,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         if (d < 1.35 && (!best || d < best.dist)) {
           best = {
             label: item.label,
-            action: "Falar",
+            action: item.kind === "npc" ? "Falar" : "Olhar",
             dist: d,
             run: () => cb.onDialogue(item.dialogue),
           };
