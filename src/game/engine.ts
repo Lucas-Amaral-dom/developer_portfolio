@@ -47,6 +47,16 @@ const PLAYER_ROW = 11;
 /** frame index inside the sliced sheet */
 const frameOf = (row: number, i: number) => row * NPC_COLS + i;
 
+/** minimal structural types so we can mutate kaplay objects with strict TS */
+type LeafObj = { width: number; pos: { x: number; y: number } };
+type PlayerObj = {
+  pos: { x: number; y: number };
+  frame: number;
+  flipX: boolean;
+  facing: Dir;
+  step: number;
+};
+
 /** idle + walk frames per facing (sheet order: down, up, side, ...) */
 const FRAMES: Record<Dir, { idle: number; walk: [number, number]; flip: boolean }> = {
   down: { idle: 0, walk: [3, 4], flip: false },
