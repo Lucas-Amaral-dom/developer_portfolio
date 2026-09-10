@@ -1,5 +1,5 @@
 import kaplay from "kaplay";
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { KAPLAYCtx } from "kaplay";
 
 import {
   SCENES,
