@@ -497,7 +497,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         state.facing = player.facing;
         player.step += k.dt() * 7;
         const f = FRAMES[player.facing];
-        player.frame = frameOf(PLAYER_ROW, f.walk[Math.floor(player.step) % 2]);
+        player.frame = frameOf(PLAYER_ROW, Math.floor(player.step) % 2 === 0 ? f.walk[0] : f.walk[1]);
         player.flipX = f.flip;
       } else {
         player.step = 0;
