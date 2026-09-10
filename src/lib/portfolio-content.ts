@@ -130,6 +130,40 @@ export function buildDialogues(data: PortfolioData): Record<string, Dialogue> {
     ],
   };
 
+  out["city-kid"] = {
+    speaker: "Garoto do parquinho",
+    pages: [
+      { text: "Eu adoro o escorregador! Você já entrou na Arena?" },
+      { text: `Dizem que o ${name} tem projetos guardados lá dentro.` },
+    ],
+  };
+  out["city-lake"] = {
+    speaker: "Moça do lago",
+    pages: [
+      { text: "O lago é o melhor lugar pra pensar em código." },
+      { text: "O Lab do SENAI fica ali em cima, cheio de bancadas de skills." },
+    ],
+  };
+  out["city-oldman"] = {
+    speaker: "Senhor da praça",
+    pages: [
+      { text: "No meu tempo portfólio era papel. Hoje é jogo!" },
+      { text: "As portas abrem sozinhas quando você chega perto. Tecnologia..." },
+    ],
+  };
+  out["city-playground"] = {
+    speaker: "Parquinho",
+    pages: [{ text: "O parquinho da cidade. Pausa merecida entre dois commits." }],
+  };
+  out["city-bench"] = {
+    speaker: "Banco",
+    pages: [{ text: "Um banco de praça. Bom lugar pra revisar ideias." }],
+  };
+  out["city-fountain"] = {
+    speaker: "Fonte",
+    pages: [{ text: "A fonte da cidade. Jogue uma moeda e faça um deploy sem bugs." }],
+  };
+
   out["about-intro"] = {
     speaker: name,
     pages: [{ text: t("aboutIntro") || "" }, { text: t("aboutStory") || "" }],
