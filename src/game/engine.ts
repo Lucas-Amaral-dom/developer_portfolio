@@ -329,7 +329,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       { facing: "down" as Dir, step: 0 },
       "player",
     ]);
-    return p as GameObj;
+    return p;
   }
 
   function isSolid(rows: string[], col: number, row: number) {
@@ -356,9 +356,8 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     const doors: {
       x: number;
       y: number;
-      left: GameObj;
-      right: GameObj;
       open: number;
+      apply: (open: number) => void;
     }[] = [];
 
     for (const b of scene.buildings) {
@@ -391,7 +390,17 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         ]);
       const left = leaf(2);
       const right = leaf(17);
-      doors.push({ x: b.door.x, y: b.door.y, left, right, open: 0 });
+      doors.push({
+        x: b.door.x,
+        y: b.door.y,
+        open: 0,
+        apply: (open: number) => {
+          const lw = Math.max(1, 13 * (1 - open));
+          left.width = lw;
+          right.width = lw;
+          right.pos.x = dx + 30 - lw;
+        },
+      });
 
       // door mat
       k.add([k.rect(TILE - 6, 6), k.pos(dx + 3, b.door.y * TILE + 4), k.color(206, 92, 92), k.z(6)]);
