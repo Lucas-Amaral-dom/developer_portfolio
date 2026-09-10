@@ -453,10 +453,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       for (const d of doors) {
         const near = Math.hypot(d.x - ptxD, d.y - ptyD) < 1.8;
         d.open += ((near ? 1 : 0) - d.open) * Math.min(1, k.dt() * 8);
-        const w = Math.max(1, 13 * (1 - d.open));
-        d.left.width = w;
-        d.right.width = w;
-        d.right.pos.x = d.x * TILE + 30 - w;
+        d.apply(d.open);
       }
 
       if (state.paused) return;
