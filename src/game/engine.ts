@@ -1,5 +1,5 @@
 import kaplay from "kaplay";
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { KAPLAYCtx } from "kaplay";
 
 import {
   SCENES,
@@ -16,6 +16,7 @@ import labSprite from "@/assets/build-lab.png";
 import arenaSprite from "@/assets/build-arena.png";
 import shopSprite from "@/assets/build-shop.png";
 import npcsSheet from "@/assets/npcs.png";
+import trainerSheet from "@/assets/trainer.png";
 
 export type Dir = "up" | "down" | "left" | "right";
 
@@ -42,10 +43,24 @@ const SPRITES: Record<string, string> = {
 
 /** rows of the Pokémon-style NPC sheet (9 frames each) */
 const NPC_COLS = 9;
-const PLAYER_ROW = 11;
 
-/** frame index inside the sliced sheet */
+/** frame index inside the sliced NPC sheet */
 const frameOf = (row: number, i: number) => row * NPC_COLS + i;
+
+/** trainer sheet: 4 columns (idle + walk), rows = down, left, right, up */
+const TRAINER_COLS = 4;
+const TRAINER_ROW: Record<Dir, number> = { down: 0, left: 1, right: 2, up: 3 };
+const trainerFrame = (dir: Dir, col: number) => TRAINER_ROW[dir] * TRAINER_COLS + col;
+
+/** minimal structural types so we can mutate kaplay objects with strict TS */
+type LeafObj = { width: number; pos: { x: number; y: number } };
+type PlayerObj = {
+  pos: { x: number; y: number };
+  frame: number;
+  flipX: boolean;
+  facing: Dir;
+  step: number;
+};
 
 /** idle + walk frames per facing (sheet order: down, up, side, ...) */
 const FRAMES: Record<Dir, { idle: number; walk: [number, number]; flip: boolean }> = {
@@ -321,15 +336,15 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
   function makePlayer(pos: { x: number; y: number }) {
     const p = k.add([
-      k.sprite("npcs", { frame: frameOf(PLAYER_ROW, 0) }),
+      k.sprite("trainer", { frame: trainerFrame("down", 0) }),
       k.pos(pos.x * TILE + TILE / 2, pos.y * TILE + TILE / 2),
       k.anchor("center"),
-      k.scale(2),
+      k.scale(0.8),
       k.z(30),
       { facing: "down" as Dir, step: 0 },
       "player",
     ]);
-    return p as GameObj;
+    return p;
   }
 
   function isSolid(rows: string[], col: number, row: number) {
@@ -356,9 +371,8 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     const doors: {
       x: number;
       y: number;
-      left: GameObj;
-      right: GameObj;
       open: number;
+      apply: (open: number) => void;
     }[] = [];
 
     for (const b of scene.buildings) {
@@ -388,10 +402,20 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
           k.color(146, 198, 226),
           k.outline(2, k.rgb(66, 92, 116)),
           k.z(15),
-        ]);
+        ]) as unknown as LeafObj;
       const left = leaf(2);
       const right = leaf(17);
-      doors.push({ x: b.door.x, y: b.door.y, left, right, open: 0 });
+      doors.push({
+        x: b.door.x,
+        y: b.door.y,
+        open: 0,
+        apply: (open: number) => {
+          const lw = Math.max(1, 13 * (1 - open));
+          left.width = lw;
+          right.width = lw;
+          right.pos.x = dx + 30 - lw;
+        },
+      });
 
       // door mat
       k.add([k.rect(TILE - 6, 6), k.pos(dx + 3, b.door.y * TILE + 4), k.color(206, 92, 92), k.z(6)]);
@@ -408,7 +432,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     for (const item of scene.interactables) drawFurniture(item);
 
     const spawn = arg.spawn ?? scene.spawn;
-    const player = makePlayer(spawn) as GameObj & { facing: Dir; step: number };
+    const player = makePlayer(spawn) as unknown as PlayerObj;
 
     // camera
     k.onUpdate(() => {
@@ -434,10 +458,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       for (const d of doors) {
         const near = Math.hypot(d.x - ptxD, d.y - ptyD) < 1.8;
         d.open += ((near ? 1 : 0) - d.open) * Math.min(1, k.dt() * 8);
-        const w = Math.max(1, 13 * (1 - d.open));
-        d.left.width = w;
-        d.right.width = w;
-        d.right.pos.x = d.x * TILE + 30 - w;
+        d.apply(d.open);
       }
 
       if (state.paused) return;
@@ -480,14 +501,12 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         player.facing = dy > 0 ? "down" : dy < 0 ? "up" : dx > 0 ? "right" : "left";
         state.facing = player.facing;
         player.step += k.dt() * 7;
-        const f = FRAMES[player.facing];
-        player.frame = frameOf(PLAYER_ROW, f.walk[Math.floor(player.step) % 2]);
-        player.flipX = f.flip;
+        // walk cycle: idle, step-left, idle, step-right
+        const cycle = [0, 1, 0, 3];
+        player.frame = trainerFrame(player.facing, cycle[Math.floor(player.step) % 4] ?? 0);
       } else {
         player.step = 0;
-        const f = FRAMES[player.facing];
-        player.frame = frameOf(PLAYER_ROW, f.idle);
-        player.flipX = f.flip;
+        player.frame = trainerFrame(player.facing, 0);
       }
 
       // nearest action
