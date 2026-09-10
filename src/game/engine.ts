@@ -16,6 +16,7 @@ import labSprite from "@/assets/build-lab.png";
 import arenaSprite from "@/assets/build-arena.png";
 import shopSprite from "@/assets/build-shop.png";
 import npcsSheet from "@/assets/npcs.png";
+import trainerSheet from "@/assets/trainer.png";
 
 export type Dir = "up" | "down" | "left" | "right";
 
@@ -42,10 +43,14 @@ const SPRITES: Record<string, string> = {
 
 /** rows of the Pokémon-style NPC sheet (9 frames each) */
 const NPC_COLS = 9;
-const PLAYER_ROW = 11;
 
-/** frame index inside the sliced sheet */
+/** frame index inside the sliced NPC sheet */
 const frameOf = (row: number, i: number) => row * NPC_COLS + i;
+
+/** trainer sheet: 4 columns (idle + walk), rows = down, left, right, up */
+const TRAINER_COLS = 4;
+const TRAINER_ROW: Record<Dir, number> = { down: 0, left: 1, right: 2, up: 3 };
+const trainerFrame = (dir: Dir, col: number) => TRAINER_ROW[dir] * TRAINER_COLS + col;
 
 /** minimal structural types so we can mutate kaplay objects with strict TS */
 type LeafObj = { width: number; pos: { x: number; y: number } };
