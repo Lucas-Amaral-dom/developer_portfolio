@@ -336,10 +336,10 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
   function makePlayer(pos: { x: number; y: number }) {
     const p = k.add([
-      k.sprite("npcs", { frame: frameOf(PLAYER_ROW, 0) }),
+      k.sprite("trainer", { frame: trainerFrame("down", 0) }),
       k.pos(pos.x * TILE + TILE / 2, pos.y * TILE + TILE / 2),
       k.anchor("center"),
-      k.scale(2),
+      k.scale(0.8),
       k.z(30),
       { facing: "down" as Dir, step: 0 },
       "player",
@@ -501,14 +501,12 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         player.facing = dy > 0 ? "down" : dy < 0 ? "up" : dx > 0 ? "right" : "left";
         state.facing = player.facing;
         player.step += k.dt() * 7;
-        const f = FRAMES[player.facing];
-        player.frame = frameOf(PLAYER_ROW, Math.floor(player.step) % 2 === 0 ? f.walk[0] : f.walk[1]);
-        player.flipX = f.flip;
+        // walk cycle: idle, step-left, idle, step-right
+        const cycle = [0, 1, 0, 3];
+        player.frame = trainerFrame(player.facing, cycle[Math.floor(player.step) % 4] ?? 0);
       } else {
         player.step = 0;
-        const f = FRAMES[player.facing];
-        player.frame = frameOf(PLAYER_ROW, f.idle);
-        player.flipX = f.flip;
+        player.frame = trainerFrame(player.facing, 0);
       }
 
       // nearest action
