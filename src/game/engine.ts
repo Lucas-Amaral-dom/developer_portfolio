@@ -387,7 +387,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
           k.color(146, 198, 226),
           k.outline(2, k.rgb(66, 92, 116)),
           k.z(15),
-        ]);
+        ]) as unknown as LeafObj;
       const left = leaf(2);
       const right = leaf(17);
       doors.push({
@@ -417,7 +417,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     for (const item of scene.interactables) drawFurniture(item);
 
     const spawn = arg.spawn ?? scene.spawn;
-    const player = makePlayer(spawn) as GameObj & { facing: Dir; step: number };
+    const player = makePlayer(spawn) as unknown as PlayerObj;
 
     // camera
     k.onUpdate(() => {
