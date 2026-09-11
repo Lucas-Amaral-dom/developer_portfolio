@@ -152,7 +152,13 @@ export const CITY_BUILDINGS: BuildingDef[] = [
 function buildCity(): SceneDef {
   const g = makeGrid(CITY_W, CITY_H, "g");
 
-  // stone paths (main streets)
+  // route ground ring around the town, like the GBA reference map
+  fillRect(g, 1, 1, CITY_W - 2, 1, "r");
+  fillRect(g, 1, CITY_H - 2, CITY_W - 2, 1, "r");
+  fillRect(g, 1, 1, 1, CITY_H - 2, "r");
+  fillRect(g, CITY_W - 2, 1, 1, CITY_H - 2, "r");
+
+  // dirt paths (main streets)
   fillRect(g, 1, 8, CITY_W - 2, 2, "p");
   fillRect(g, 1, 18, CITY_W - 2, 2, "p");
   fillRect(g, 14, 8, 2, 12, "p");
@@ -167,6 +173,11 @@ function buildCity(): SceneDef {
   // pond with sandy shore (right side, like the reference town)
   fillRect(g, 21, 11, 7, 5, "s");
   fillRect(g, 22, 12, 5, 3, "w");
+
+  // tall grass patches on the route ground
+  fillRect(g, 2, 3, 2, 3, "t");
+  fillRect(g, 26, 15, 2, 3, "t");
+  fillRect(g, 20, 20, 3, 1, "t");
 
   // playground (left side): sand floor + fence
   fillRect(g, 6, 11, 7, 6, "d");

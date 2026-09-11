@@ -15,8 +15,7 @@ import homeSprite from "@/assets/build-home.png";
 import labSprite from "@/assets/build-lab.png";
 import arenaSprite from "@/assets/build-arena.png";
 import shopSprite from "@/assets/build-shop.png";
-import npcsSheet from "@/assets/npcs.png";
-import trainerSheet from "@/assets/trainer.png";
+import charactersSheet from "@/assets/characters.png";
 
 export type Dir = "up" | "down" | "left" | "right";
 
@@ -41,16 +40,18 @@ const SPRITES: Record<string, string> = {
   shop: shopSprite,
 };
 
-/** rows of the Pokémon-style NPC sheet (9 frames each) */
-const NPC_COLS = 9;
-
-/** frame index inside the sliced NPC sheet */
-const frameOf = (row: number, i: number) => row * NPC_COLS + i;
-
-/** trainer sheet: 4 columns (idle + walk), rows = down, left, right, up */
-const TRAINER_COLS = 4;
-const TRAINER_ROW: Record<Dir, number> = { down: 0, left: 1, right: 2, up: 3 };
-const trainerFrame = (dir: Dir, col: number) => TRAINER_ROW[dir] * TRAINER_COLS + col;
+/**
+ * characters.png — GBA-style trainer sheets stacked vertically.
+ * 4 columns (idle, step A, idle, step B) and 4 rows per character
+ * (down, left, right, up). Character 0 is the player.
+ */
+const CHAR_COLS = 4;
+const CHAR_COUNT = 6;
+const DIR_ROW: Record<Dir, number> = { down: 0, left: 1, right: 2, up: 3 };
+const charFrame = (char: number, dir: Dir, col: number) =>
+  ((char % CHAR_COUNT) * 4 + DIR_ROW[dir]) * CHAR_COLS + col;
+/** NPC ids from world.ts map onto characters 1..5 (0 is the player) */
+const npcChar = (id: number) => 1 + (Math.abs(id) % (CHAR_COUNT - 1));
 
 /** minimal structural types so we can mutate kaplay objects with strict TS */
 type LeafObj = { width: number; pos: { x: number; y: number } };
@@ -62,26 +63,20 @@ type PlayerObj = {
   step: number;
 };
 
-/** idle + walk frames per facing (sheet order: down, up, side, ...) */
-const FRAMES: Record<Dir, { idle: number; walk: [number, number]; flip: boolean }> = {
-  down: { idle: 0, walk: [3, 4], flip: false },
-  up: { idle: 1, walk: [5, 6], flip: false },
-  left: { idle: 2, walk: [7, 8], flip: false },
-  right: { idle: 2, walk: [7, 8], flip: true },
-};
-
+/** GBA town palette, sampled from the reference route/town tiles */
 const PALETTE: Record<string, [number, number, number]> = {
-  g: [126, 197, 108],
-  p: [222, 205, 168],
-  r: [222, 205, 168],
-  w: [92, 168, 224],
-  s: [235, 218, 168],
-  d: [226, 196, 146],
-  h: [180, 138, 96],
-  T: [96, 168, 96],
-  f: [126, 197, 108],
-  L: [126, 197, 108],
-  B: [126, 197, 108],
+  g: [124, 190, 148], // town grass (teal-green)
+  p: [214, 176, 150], // dirt path
+  r: [198, 154, 128], // dirt border / route ground
+  w: [120, 190, 226], // water
+  s: [230, 208, 166], // sand shore
+  d: [226, 196, 146], // playground sand
+  h: [180, 138, 96], // fence
+  t: [96, 170, 116], // tall grass
+  T: [124, 190, 148],
+  f: [124, 190, 148],
+  L: [124, 190, 148],
+  B: [124, 190, 148],
   ".": [238, 224, 196],
   W: [122, 92, 72],
   V: [150, 116, 92],
@@ -116,7 +111,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
   });
 
   for (const [name, src] of Object.entries(SPRITES)) k.loadSprite(name, src);
-  k.loadSprite("npcs", npcsSheet, { sliceX: NPC_COLS, sliceY: 13 });
+  k.loadSprite("chars", charactersSheet, { sliceX: CHAR_COLS, sliceY: CHAR_COUNT * 4 });
 
   const state = {
     paused: false,
@@ -130,62 +125,125 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     return k.rgb(c[0], c[1], c[2]);
   }
 
+  /** stable per-tile pseudo random so the texture never flickers */
+  const noise = (col: number, row: number, salt = 0) => {
+    const n = Math.sin((col * 127.1 + row * 311.7 + salt * 74.7) * 43758.5453);
+    return n - Math.floor(n);
+  };
+
   function drawTile(ch: string, col: number, row: number) {
     const px = col * TILE;
     const py = row * TILE;
+    const dot = (x: number, y: number, w: number, h: number, c: [number, number, number], z = 1) =>
+      k.add([k.rect(w, h), k.pos(px + x, py + y), k.color(c[0], c[1], c[2]), k.z(z)]);
+
     k.add([k.rect(TILE, TILE), k.pos(px, py), k.color(rgb(ch)), k.z(0)]);
 
-    if (ch === "g") {
-      k.add([k.rect(4, 4), k.pos(px + 7, py + 9), k.color(150, 214, 122), k.z(1)]);
-      k.add([k.rect(3, 3), k.pos(px + 21, py + 20), k.color(104, 178, 92), k.z(1)]);
+    if (ch === "g" || ch === "T" || ch === "f" || ch === "L" || ch === "B") {
+      // GBA town grass: soft checker plus little blade clusters
+      if ((col + row) % 2 === 0) dot(0, 0, TILE, TILE, [132, 198, 154], 0);
+      const n = noise(col, row);
+      dot(4 + Math.floor(n * 8), 6 + Math.floor(n * 10), 6, 2, [104, 172, 128]);
+      dot(6 + Math.floor(n * 8), 8 + Math.floor(n * 10), 2, 3, [104, 172, 128]);
+      dot(20 - Math.floor(n * 6), 20 + Math.floor(n * 6), 5, 2, [150, 212, 168]);
+      dot(22 - Math.floor(n * 6), 18 + Math.floor(n * 6), 2, 3, [150, 212, 168]);
     }
     if (ch === "p" || ch === "r") {
-      // cobbled street
-      k.add([k.rect(TILE - 4, 2), k.pos(px + 2, py + 14), k.color(236, 222, 190), k.z(1)]);
-      k.add([k.rect(2, TILE - 6), k.pos(px + 15, py + 3), k.color(208, 190, 154), k.z(1)]);
+      // packed dirt with pebbles, like the route ground in the reference
+      const n = noise(col, row, 3);
+      dot(0, 0, TILE, 3, ch === "r" ? [186, 142, 118] : [204, 164, 138], 1);
+      dot(3 + Math.floor(n * 18), 8 + Math.floor(n * 12), 4, 3, [188, 146, 122]);
+      dot(18 - Math.floor(n * 12), 20 - Math.floor(n * 10), 3, 2, [230, 196, 172]);
+      dot(9 + Math.floor(n * 10), 24, 5, 2, [190, 150, 126]);
+      if (n > 0.82) {
+        dot(12, 12, 7, 5, [168, 150, 140], 2);
+        dot(12, 12, 7, 2, [200, 186, 176], 3);
+      }
     }
     if (ch === "d") {
-      k.add([k.rect(4, 3), k.pos(px + 6, py + 12), k.color(210, 176, 128), k.z(1)]);
-      k.add([k.rect(3, 3), k.pos(px + 22, py + 22), k.color(238, 212, 168), k.z(1)]);
+      const n = noise(col, row, 5);
+      dot(3 + Math.floor(n * 16), 10 + Math.floor(n * 12), 5, 3, [210, 176, 128]);
+      dot(20 - Math.floor(n * 10), 21, 4, 3, [242, 218, 176]);
+    }
+    if (ch === "t") {
+      // tall grass patch
+      for (let i = 0; i < 5; i++) {
+        const x = 2 + i * 6;
+        dot(x, 8 + ((i * 5) % 9), 4, TILE - 10, [78, 152, 100], 3);
+        dot(x, 6 + ((i * 5) % 9), 4, 4, [112, 190, 132], 4);
+      }
     }
     if (ch === "h") {
-      // wooden fence
-      k.add([k.rect(TILE, 4), k.pos(px, py + 10), k.color(150, 108, 70), k.z(6)]);
-      k.add([k.rect(TILE, 4), k.pos(px, py + 20), k.color(150, 108, 70), k.z(6)]);
-      k.add([k.rect(5, 24), k.pos(px + 4, py + 5), k.color(126, 88, 56), k.z(7)]);
-      k.add([k.rect(5, 24), k.pos(px + 22, py + 5), k.color(126, 88, 56), k.z(7)]);
+      k.add([k.rect(TILE, 4), k.pos(px, py + 10), k.color(196, 154, 110), k.z(6)]);
+      k.add([k.rect(TILE, 4), k.pos(px, py + 20), k.color(196, 154, 110), k.z(6)]);
+      k.add([k.rect(5, 24), k.pos(px + 4, py + 5), k.color(150, 108, 70), k.z(7)]);
+      k.add([k.rect(5, 24), k.pos(px + 22, py + 5), k.color(150, 108, 70), k.z(7)]);
     }
     if (ch === "w") {
-      k.add([k.rect(18, 3), k.pos(px + 5, py + 8), k.color(178, 226, 252), k.z(1)]);
-      k.add([k.rect(12, 3), k.pos(px + 12, py + 21), k.color(58, 138, 198), k.z(1)]);
+      // water with animated highlight lines
+      dot(0, 0, TILE, TILE, [104, 176, 218], 0);
+      const a = k.add([
+        k.rect(16, 3),
+        k.pos(px + 4, py + 9),
+        k.color(184, 228, 250),
+        k.z(1),
+        k.opacity(0.9),
+      ]) as unknown as { pos: { x: number } };
+      const b = k.add([
+        k.rect(11, 3),
+        k.pos(px + 14, py + 21),
+        k.color(78, 148, 200),
+        k.z(1),
+      ]) as unknown as { pos: { x: number } };
+      const ox = px + 4;
+      const oxb = px + 14;
+      k.onUpdate(() => {
+        a.pos.x = ox + Math.sin(k.time() * 1.5 + col) * 3;
+        b.pos.x = oxb + Math.cos(k.time() * 1.2 + row) * 3;
+      });
     }
     if (ch === "T") {
-      k.add([k.rect(8, 14), k.pos(px + 12, py + 16), k.color(122, 84, 54), k.z(3)]);
-      k.add([
-        k.rect(26, 22, { radius: 6 }),
-        k.pos(px + 3, py + 2),
-        k.color(56, 140, 80),
-        k.outline(2, k.rgb(28, 60, 40)),
-        k.z(4),
-      ]);
-      k.add([k.rect(8, 6, { radius: 3 }), k.pos(px + 8, py + 6), k.color(86, 176, 104), k.z(5)]);
+      // rounded GBA tree: trunk, shaded canopy, highlights
+      k.add([k.rect(9, 12), k.pos(px + 12, py + 19), k.color(126, 88, 58), k.z(3)]);
+      k.add([k.rect(9, 3), k.pos(px + 12, py + 28), k.color(96, 66, 44), k.z(4)]);
+      k.add([k.circle(15), k.pos(px + 16, py + 14), k.color(46, 118, 74), k.z(4)]);
+      k.add([k.circle(12), k.pos(px + 14, py + 12), k.color(64, 148, 92), k.z(5)]);
+      k.add([k.circle(6), k.pos(px + 11, py + 9), k.color(104, 184, 118), k.z(6)]);
+      k.add([k.circle(3), k.pos(px + 22, py + 18), k.color(34, 96, 62), k.z(6)]);
     }
     if (ch === "f") {
-      k.add([k.rect(5, 5), k.pos(px + 8, py + 10), k.color(238, 96, 124), k.z(3)]);
-      k.add([k.rect(5, 5), k.pos(px + 19, py + 19), k.color(252, 226, 118), k.z(3)]);
+      const n = noise(col, row, 7);
+      const petals: [number, number, number] = n > 0.5 ? [238, 108, 132] : [246, 224, 120];
+      for (const [ox, oy] of [
+        [7, 9],
+        [19, 18],
+        [12, 22],
+      ] as const) {
+        dot(ox, oy, 5, 5, petals, 3);
+        dot(ox + 1, oy + 1, 3, 3, [252, 250, 236], 4);
+      }
     }
     if (ch === "L") {
-      k.add([k.rect(4, 20), k.pos(px + 14, py + 11), k.color(48, 52, 62), k.z(4)]);
+      k.add([k.rect(5, 22), k.pos(px + 14, py + 10), k.color(58, 62, 74), k.z(4)]);
+      k.add([k.rect(13, 4), k.pos(px + 10, py + 30), k.color(46, 50, 60), k.z(5)]);
       k.add([
-        k.rect(14, 12, { radius: 3 }),
-        k.pos(px + 9, py + 2),
+        k.rect(15, 13, { radius: 3 }),
+        k.pos(px + 9, py + 1),
         k.color(252, 232, 132),
-        k.outline(2, k.rgb(48, 52, 62)),
+        k.outline(2, k.rgb(58, 62, 74)),
         k.z(5),
       ]);
+      k.add([k.rect(5, 4), k.pos(px + 11, py + 3), k.color(255, 252, 210), k.z(6)]);
     }
     if (ch === "s") {
-      k.add([k.rect(TILE, 5), k.pos(px, py + 24), k.color(214, 196, 148), k.z(1)]);
+      // sandy shore with pebble rim
+      const n = noise(col, row, 11);
+      dot(2 + Math.floor(n * 20), 6 + Math.floor(n * 14), 5, 4, [214, 190, 146], 1);
+      dot(16 - Math.floor(n * 10), 22, 6, 4, [244, 228, 190], 1);
+      if (n > 0.6) {
+        dot(10, 12, 9, 7, [162, 150, 138], 2);
+        dot(10, 12, 9, 3, [198, 188, 176], 3);
+      }
     }
     if (ch === "W") {
       k.add([k.rect(TILE, 6), k.pos(px, py + 26), k.color(94, 68, 52), k.z(2)]);
@@ -205,14 +263,19 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
     if (kind === "npc") {
       const face = item.face ?? "down";
-      const f = FRAMES[face];
-      k.add([
-        k.sprite("npcs", { frame: frameOf(item.npc ?? 0, f.idle), flipX: f.flip }),
-        k.pos(px + TILE / 2, py + TILE / 2 + 6),
+      const char = npcChar(item.npc ?? 0);
+      const spr = k.add([
+        k.sprite("chars", { frame: charFrame(char, face, 0) }),
+        k.pos(px + TILE / 2, py + TILE - 2),
         k.anchor("bot"),
-        k.scale(2),
+        k.scale(0.8),
         k.z(20),
-      ]);
+      ]) as unknown as { frame: number };
+      // gentle idle breathing: alternate between the two step frames
+      k.onUpdate(() => {
+        const t = Math.floor(k.time() * 1.6) % 4;
+        spr.frame = charFrame(char, face, t === 1 ? 1 : t === 3 ? 3 : 0);
+      });
       return;
     }
 
@@ -336,7 +399,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
   function makePlayer(pos: { x: number; y: number }) {
     const p = k.add([
-      k.sprite("trainer", { frame: trainerFrame("down", 0) }),
+      k.sprite("chars", { frame: charFrame(0, "down", 0) }),
       k.pos(pos.x * TILE + TILE / 2, pos.y * TILE + TILE / 2),
       k.anchor("center"),
       k.scale(0.8),
@@ -503,10 +566,10 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         player.step += k.dt() * 7;
         // walk cycle: idle, step-left, idle, step-right
         const cycle = [0, 1, 0, 3];
-        player.frame = trainerFrame(player.facing, cycle[Math.floor(player.step) % 4] ?? 0);
+        player.frame = charFrame(0, player.facing, cycle[Math.floor(player.step) % 4] ?? 0);
       } else {
         player.step = 0;
-        player.frame = trainerFrame(player.facing, 0);
+        player.frame = charFrame(0, player.facing, 0);
       }
 
       // nearest action
