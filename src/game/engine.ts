@@ -117,7 +117,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
   });
 
   for (const [name, src] of Object.entries(SPRITES)) k.loadSprite(name, src);
-  k.loadSprite("npcs", npcsSheet, { sliceX: NPC_COLS, sliceY: 13 });
+  k.loadSprite("chars", charactersSheet, { sliceX: CHAR_COLS, sliceY: CHAR_COUNT * 4 });
 
   const state = {
     paused: false,
@@ -206,14 +206,19 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
     if (kind === "npc") {
       const face = item.face ?? "down";
-      const f = FRAMES[face];
-      k.add([
-        k.sprite("npcs", { frame: frameOf(item.npc ?? 0, f.idle), flipX: f.flip }),
-        k.pos(px + TILE / 2, py + TILE / 2 + 6),
+      const char = npcChar(item.npc ?? 0);
+      const spr = k.add([
+        k.sprite("chars", { frame: charFrame(char, face, 0) }),
+        k.pos(px + TILE / 2, py + TILE - 2),
         k.anchor("bot"),
-        k.scale(2),
+        k.scale(0.8),
         k.z(20),
-      ]);
+      ]) as unknown as { frame: number };
+      // gentle idle breathing: alternate between the two step frames
+      k.onUpdate(() => {
+        const t = Math.floor(k.time() * 1.6) % 4;
+        spr.frame = charFrame(char, face, t === 1 ? 1 : t === 3 ? 3 : 0);
+      });
       return;
     }
 
