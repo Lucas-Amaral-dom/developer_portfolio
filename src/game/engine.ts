@@ -40,16 +40,18 @@ const SPRITES: Record<string, string> = {
   shop: shopSprite,
 };
 
-/** rows of the Pokémon-style NPC sheet (9 frames each) */
-const NPC_COLS = 9;
-
-/** frame index inside the sliced NPC sheet */
-const frameOf = (row: number, i: number) => row * NPC_COLS + i;
-
-/** trainer sheet: 4 columns (idle + walk), rows = down, left, right, up */
-const TRAINER_COLS = 4;
-const TRAINER_ROW: Record<Dir, number> = { down: 0, left: 1, right: 2, up: 3 };
-const trainerFrame = (dir: Dir, col: number) => TRAINER_ROW[dir] * TRAINER_COLS + col;
+/**
+ * characters.png — GBA-style trainer sheets stacked vertically.
+ * 4 columns (idle, step A, idle, step B) and 4 rows per character
+ * (down, left, right, up). Character 0 is the player.
+ */
+const CHAR_COLS = 4;
+const CHAR_COUNT = 6;
+const DIR_ROW: Record<Dir, number> = { down: 0, left: 1, right: 2, up: 3 };
+const charFrame = (char: number, dir: Dir, col: number) =>
+  ((char % CHAR_COUNT) * 4 + DIR_ROW[dir]) * CHAR_COLS + col;
+/** NPC ids from world.ts map onto characters 1..5 (0 is the player) */
+const npcChar = (id: number) => 1 + (Math.abs(id) % (CHAR_COUNT - 1));
 
 /** minimal structural types so we can mutate kaplay objects with strict TS */
 type LeafObj = { width: number; pos: { x: number; y: number } };
