@@ -15,8 +15,7 @@ import homeSprite from "@/assets/build-home.png";
 import labSprite from "@/assets/build-lab.png";
 import arenaSprite from "@/assets/build-arena.png";
 import shopSprite from "@/assets/build-shop.png";
-import npcsSheet from "@/assets/npcs.png";
-import trainerSheet from "@/assets/trainer.png";
+import charactersSheet from "@/assets/characters.png";
 
 export type Dir = "up" | "down" | "left" | "right";
 
