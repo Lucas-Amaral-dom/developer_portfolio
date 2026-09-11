@@ -63,26 +63,20 @@ type PlayerObj = {
   step: number;
 };
 
-/** idle + walk frames per facing (sheet order: down, up, side, ...) */
-const FRAMES: Record<Dir, { idle: number; walk: [number, number]; flip: boolean }> = {
-  down: { idle: 0, walk: [3, 4], flip: false },
-  up: { idle: 1, walk: [5, 6], flip: false },
-  left: { idle: 2, walk: [7, 8], flip: false },
-  right: { idle: 2, walk: [7, 8], flip: true },
-};
-
+/** GBA town palette, sampled from the reference route/town tiles */
 const PALETTE: Record<string, [number, number, number]> = {
-  g: [126, 197, 108],
-  p: [222, 205, 168],
-  r: [222, 205, 168],
-  w: [92, 168, 224],
-  s: [235, 218, 168],
-  d: [226, 196, 146],
-  h: [180, 138, 96],
-  T: [96, 168, 96],
-  f: [126, 197, 108],
-  L: [126, 197, 108],
-  B: [126, 197, 108],
+  g: [124, 190, 148], // town grass (teal-green)
+  p: [214, 176, 150], // dirt path
+  r: [198, 154, 128], // dirt border / route ground
+  w: [120, 190, 226], // water
+  s: [230, 208, 166], // sand shore
+  d: [226, 196, 146], // playground sand
+  h: [180, 138, 96], // fence
+  t: [96, 170, 116], // tall grass
+  T: [124, 190, 148],
+  f: [124, 190, 148],
+  L: [124, 190, 148],
+  B: [124, 190, 148],
   ".": [238, 224, 196],
   W: [122, 92, 72],
   V: [150, 116, 92],
