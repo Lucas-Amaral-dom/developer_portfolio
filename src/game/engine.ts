@@ -342,7 +342,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
 
   function makePlayer(pos: { x: number; y: number }) {
     const p = k.add([
-      k.sprite("trainer", { frame: trainerFrame("down", 0) }),
+      k.sprite("chars", { frame: charFrame(0, "down", 0) }),
       k.pos(pos.x * TILE + TILE / 2, pos.y * TILE + TILE / 2),
       k.anchor("center"),
       k.scale(0.8),
@@ -509,10 +509,10 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         player.step += k.dt() * 7;
         // walk cycle: idle, step-left, idle, step-right
         const cycle = [0, 1, 0, 3];
-        player.frame = trainerFrame(player.facing, cycle[Math.floor(player.step) % 4] ?? 0);
+        player.frame = charFrame(0, player.facing, cycle[Math.floor(player.step) % 4] ?? 0);
       } else {
         player.step = 0;
-        player.frame = trainerFrame(player.facing, 0);
+        player.frame = charFrame(0, player.facing, 0);
       }
 
       // nearest action
