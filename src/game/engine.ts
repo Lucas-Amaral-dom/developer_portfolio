@@ -499,6 +499,15 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         },
       });
 
+      // door shadow that appears as the leaves slide open
+      const shadow = k.add([
+        k.rect(TILE - 4, TILE - 4),
+        k.pos(dx + 2, b.door.y * TILE + 2),
+        k.color(60, 52, 64),
+        k.opacity(0),
+        k.z(5),
+      ]) as unknown as { opacity: number };
+
       // door mat
       k.add([k.rect(TILE - 6, 6), k.pos(dx + 3, b.door.y * TILE + 4), k.color(206, 92, 92), k.z(6)]);
 
