@@ -256,6 +256,22 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
     if (ch === "C") {
       k.add([k.rect(TILE - 6, 10), k.pos(px + 3, py + 18), k.color(234, 128, 128), k.z(2)]);
     }
+    if (ch === "R") {
+      // rocky cliff tile with highlight/shadow bands
+      k.add([k.rect(TILE, TILE), k.pos(px, py), k.color(150, 92, 68), k.z(0)]);
+      const n = noise(col, row, 13);
+      dot(0, 0, TILE, 4, [120, 72, 52], 1);
+      dot(0, TILE - 5, TILE, 5, [120, 72, 52], 1);
+      dot(2 + Math.floor(n * 12), 6 + Math.floor(n * 8), 8, 4, [180, 110, 82], 2);
+      dot(16 - Math.floor(n * 8), 18 + Math.floor(n * 6), 6, 3, [110, 66, 48], 3);
+    }
+    if (ch === "D") {
+      // sandy doorway tile — the dark shadow overlay is drawn by the building loop
+      k.add([k.rect(TILE, TILE), k.pos(px, py), k.color(180, 164, 138), k.z(0)]);
+      const n = noise(col, row, 17);
+      dot(3 + Math.floor(n * 18), 8 + Math.floor(n * 12), 4, 3, [210, 188, 156], 1);
+      dot(18 - Math.floor(n * 10), 20 - Math.floor(n * 8), 5, 3, [210, 188, 156], 1);
+    }
   }
 
   function drawFurniture(item: Interactable) {
