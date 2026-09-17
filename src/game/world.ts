@@ -152,148 +152,92 @@ export const CITY_BUILDINGS: BuildingDef[] = [
 function buildCity(): SceneDef {
   const g = makeGrid(CITY_W, CITY_H, "g");
 
-  // route ground ring around the town, like the GBA reference map
-  fillRect(g, 1, 1, CITY_W - 2, 1, "r");
-  fillRect(g, 1, CITY_H - 2, CITY_W - 2, 1, "r");
-  fillRect(g, 1, 1, 1, CITY_H - 2, "r");
-  fillRect(g, CITY_W - 2, 1, 1, CITY_H - 2, "r");
+  // GBA-style cliff border on top and left, like the reference town
+  fillRect(g, 0, 0, CITY_W, 2, "R");
+  fillRect(g, 0, 0, 2, CITY_H, "R");
+  // decorative gate openings
+  set(g, 14, 1, "g");
+  set(g, 15, 1, "g");
+  set(g, 1, 12, "g");
+  set(g, 1, 13, "g");
 
-  // dirt paths (main streets)
-  fillRect(g, 1, 8, CITY_W - 2, 2, "p");
-  fillRect(g, 1, 18, CITY_W - 2, 2, "p");
-  fillRect(g, 14, 8, 2, 12, "p");
-  fillRect(g, 5, 7, 1, 2, "p");
-  fillRect(g, 23, 7, 1, 2, "p");
-  fillRect(g, 14, 17, 1, 2, "p");
-  // side paths
-  fillRect(g, 4, 10, 1, 8, "p");
-  fillRect(g, 24, 10, 1, 8, "p");
-  fillRect(g, 18, 12, 1, 6, "p");
+  // pond with rock border in the top-left
+  fillRect(g, 2, 3, 8, 6, "s"); // sand shore
+  fillRect(g, 3, 4, 6, 4, "w"); // water
+  // rock rim around the pond (only where it does not touch the cliff)
+  for (const [x, y] of [
+    [2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3],
+    [9, 3], [9, 4], [9, 5], [9, 6], [9, 7], [9, 8],
+    [2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8],
+    [2, 4], [2, 5], [2, 6], [2, 7],
+  ] as const) {
+    if (g[y]![x] === "s") set(g, x, y, "R");
+  }
 
-  // pond with sandy shore (right side, like the reference town)
-  fillRect(g, 21, 11, 7, 5, "s");
-  fillRect(g, 22, 12, 5, 3, "w");
+  // sand plaza connecting buildings and the pond
+  fillRect(g, 2, 7, 26, 2, "s");
+  fillRect(g, 2, 11, 26, 2, "s");
+  fillRect(g, 2, 15, 26, 2, "s");
+  // vertical paths from doors to plazas
+  fillRect(g, 13, 7, 1, 10, "s");
+  fillRect(g, 23, 7, 1, 10, "s");
+  fillRect(g, 5, 17, 1, 2, "s");
+  fillRect(g, 21, 17, 1, 2, "s");
+  // dirt shortcuts through grass
+  fillRect(g, 8, 9, 1, 4, "p");
+  fillRect(g, 18, 9, 1, 4, "p");
 
-  // tall grass patches on the route ground
-  fillRect(g, 2, 3, 2, 3, "t");
-  fillRect(g, 26, 15, 2, 3, "t");
-  fillRect(g, 20, 20, 3, 1, "t");
+  // tall grass patches at the wild edges
+  fillRect(g, 26, 3, 3, 3, "t");
+  fillRect(g, 26, 15, 3, 3, "t");
+  fillRect(g, 20, 19, 8, 2, "t");
+  fillRect(g, 3, 19, 8, 2, "t");
 
-  // playground (left side): sand floor + fence
-  fillRect(g, 6, 11, 7, 6, "d");
-  fillRect(g, 6, 10, 7, 1, "h");
-  fillRect(g, 6, 11, 1, 6, "h");
-  fillRect(g, 12, 11, 1, 6, "h");
-  set(g, 9, 10, "d"); // playground entrance
-
-  // flower gardens with fences
-  fillRect(g, 26, 3, 3, 3, "f");
-  fillRect(g, 26, 6, 3, 1, "h");
-  fillRect(g, 1, 11, 3, 3, "f");
+  // flower gardens
+  fillRect(g, 16, 3, 3, 2, "f");
+  fillRect(g, 6, 3, 3, 2, "f");
+  fillRect(g, 17, 13, 2, 2, "f");
 
   // trees
   for (const [x, y] of [
-    [10, 20],
-    [19, 11],
-    [19, 16],
-    [28, 11],
-    [28, 16],
-    [2, 16],
-    [2, 20],
-    [27, 20],
-    [20, 20],
-    [9, 3],
-    [18, 3],
+    [4, 11], [8, 11], [10, 7], [18, 7], [27, 7], [28, 11],
+    [28, 16], [3, 16], [11, 15], [25, 15], [10, 19], [19, 19],
+    [23, 13], [26, 8], [7, 8],
   ] as const) {
     set(g, x, y, "T");
   }
-  // flower patches
+
+  // lamp posts along the plazas
   for (const [x, y] of [
-    [13, 7],
-    [16, 7],
-    [4, 7],
-    [7, 7],
-    [22, 7],
-    [25, 7],
-    [12, 20],
-    [17, 20],
-    [5, 20],
-  ] as const) {
-    set(g, x, y, "f");
-  }
-  // lamp posts
-  for (const [x, y] of [
-    [13, 10],
-    [17, 10],
-    [13, 16],
-    [21, 18],
-    [8, 18],
-    [26, 10],
+    [11, 9], [19, 9], [7, 13], [25, 13], [15, 15], [6, 18], [24, 18],
   ] as const) {
     set(g, x, y, "L");
   }
 
-  // tree border
-  border(g, "T");
-
-  // building footprints block movement
+  // building footprints block movement; door tiles are passable shadows
   for (const b of CITY_BUILDINGS) {
     fillRect(g, b.x, b.y, b.w, b.h, "B");
-    set(g, b.door.x, b.door.y, "p");
+    set(g, b.door.x, b.door.y, "D");
   }
 
   return {
     id: "city",
     title: "Cidade Dev",
     grid: toRows(g),
-    spawn: { x: 15, y: 11 },
+    spawn: { x: 15, y: 13 },
     indoor: false,
-    hint: "Setas / WASD para andar. As portas abrem sozinhas — aperte A na porta para entrar.",
+    hint: "Setas / WASD para andar. Chegue perto de uma porta para abri-la e caminhe sobre a sombra para entrar.",
     buildings: CITY_BUILDINGS,
     interactables: [
-      { x: 17, y: 12, kind: "sign", label: "Placa da cidade", dialogue: "city-sign" },
-      {
-        x: 12,
-        y: 9,
-        kind: "npc",
-        npc: 4,
-        face: "down",
-        label: "Guia",
-        dialogue: "city-guide",
-      },
-      {
-        x: 9,
-        y: 14,
-        kind: "npc",
-        npc: 2,
-        face: "left",
-        label: "Garoto do parquinho",
-        dialogue: "city-kid",
-      },
-      {
-        x: 20,
-        y: 13,
-        kind: "npc",
-        npc: 5,
-        face: "right",
-        label: "Moça do lago",
-        dialogue: "city-lake",
-      },
-      {
-        x: 17,
-        y: 18,
-        kind: "npc",
-        npc: 8,
-        face: "up",
-        label: "Senhor da praça",
-        dialogue: "city-oldman",
-      },
-      { x: 7, y: 12, kind: "swing", label: "Balanço", dialogue: "city-playground" },
-      { x: 11, y: 12, kind: "slide", label: "Escorregador", dialogue: "city-playground" },
-      { x: 9, y: 16, kind: "sandbox", label: "Caixa de areia", dialogue: "city-playground" },
-      { x: 16, y: 20, kind: "bench", label: "Banco", dialogue: "city-bench" },
-      { x: 18, y: 20, kind: "bench", label: "Banco", dialogue: "city-bench" },
-      { x: 15, y: 11, kind: "fountain", label: "Fonte", dialogue: "city-fountain" },
+      { x: 15, y: 11, kind: "sign", label: "Placa da cidade", dialogue: "city-sign" },
+      { x: 10, y: 13, kind: "npc", npc: 1, face: "down", label: "Guia", dialogue: "city-guide" },
+      { x: 4, y: 10, kind: "npc", npc: 2, face: "right", label: "Garoto do lago", dialogue: "city-kid" },
+      { x: 24, y: 10, kind: "npc", npc: 3, face: "left", label: "Moça do lago", dialogue: "city-lake" },
+      { x: 8, y: 18, kind: "npc", npc: 4, face: "up", label: "Senhor da praça", dialogue: "city-oldman" },
+      { x: 22, y: 18, kind: "npc", npc: 5, face: "up", label: "Treinador", dialogue: "city-playground" },
+      { x: 15, y: 16, kind: "fountain", label: "Fonte", dialogue: "city-fountain" },
+      { x: 13, y: 5, kind: "bench", label: "Banco", dialogue: "city-bench" },
+      { x: 23, y: 5, kind: "bench", label: "Banco", dialogue: "city-bench" },
     ],
     exits: CITY_BUILDINGS.map((b) => ({
       x: b.door.x,
@@ -410,7 +354,8 @@ export const SCENES: Record<SceneId, SceneDef> = {
   ),
 };
 
-export const SOLID_TILES = new Set(["T", "w", "B", "W", "V", "h"]);
+export const SOLID_TILES = new Set(["T", "w", "B", "W", "V", "h", "R"]);
+export const DOOR_TILES = new Set(["D"]);
 
 export const BADGES: { scene: SceneId; name: string }[] = [
   { scene: "home", name: "Insígnia da Casa" },
