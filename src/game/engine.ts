@@ -561,7 +561,6 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       for (const exit of scene.exits) {
         const d = doors.find((door) => door.x === exit.x && door.y === exit.y);
         if (pcol === exit.x && prow === exit.y && d && d.open > 0.5) {
-          console.log("auto-enter", exit.to, "pcol", pcol, "prow", prow, "open", d.open);
           goTo(exit.to);
           return;
         }
