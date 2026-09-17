@@ -69,7 +69,7 @@ const PALETTE: Record<string, [number, number, number]> = {
   p: [214, 176, 150], // dirt path
   r: [198, 154, 128], // dirt border / route ground
   w: [120, 190, 226], // water
-  s: [230, 208, 166], // sand shore
+  s: [230, 208, 166], // sand shore / plaza
   d: [226, 196, 146], // playground sand
   h: [180, 138, 96], // fence
   t: [96, 170, 116], // tall grass
@@ -77,6 +77,8 @@ const PALETTE: Record<string, [number, number, number]> = {
   f: [124, 190, 148],
   L: [124, 190, 148],
   B: [124, 190, 148],
+  R: [150, 92, 68], // rock / cliff border
+  D: [180, 164, 138], // door shadow tile
   ".": [238, 224, 196],
   W: [122, 92, 72],
   V: [150, 116, 92],
