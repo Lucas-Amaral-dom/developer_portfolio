@@ -354,7 +354,8 @@ export const SCENES: Record<SceneId, SceneDef> = {
   ),
 };
 
-export const SOLID_TILES = new Set(["T", "w", "B", "W", "V", "h"]);
+export const SOLID_TILES = new Set(["T", "w", "B", "W", "V", "h", "R"]);
+export const DOOR_TILES = new Set(["D"]);
 
 export const BADGES: { scene: SceneId; name: string }[] = [
   { scene: "home", name: "Insígnia da Casa" },
