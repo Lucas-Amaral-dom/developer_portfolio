@@ -454,6 +454,7 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
       y: number;
       open: number;
       apply: (open: number) => void;
+      shadow: { opacity: number };
     }[] = [];
 
     for (const b of scene.buildings) {
