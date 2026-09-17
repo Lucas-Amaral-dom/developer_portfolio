@@ -630,16 +630,18 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
           };
         }
       }
-      for (const exit of scene.exits) {
-        const d = Math.hypot(exit.x - ptx, exit.y - pty);
-        if (d < 1.1 && (!best || d < best.dist)) {
-          const target = SCENES[exit.to];
-          best = {
-            label: scene.indoor ? "Voltar pra cidade" : target.title,
-            action: scene.indoor ? "Sair" : "Entrar",
-            dist: d,
-            run: () => goTo(exit.to),
-          };
+      // indoors still use the A button to leave; outdoors auto-enter by walking onto the door shadow
+      if (scene.indoor) {
+        for (const exit of scene.exits) {
+          const d = Math.hypot(exit.x - ptx, exit.y - pty);
+          if (d < 1.1 && (!best || d < best.dist)) {
+            best = {
+              label: "Voltar pra cidade",
+              action: "Sair",
+              dist: d,
+              run: () => goTo(exit.to),
+            };
+          }
         }
       }
 
