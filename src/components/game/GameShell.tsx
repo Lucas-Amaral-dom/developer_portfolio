@@ -93,7 +93,7 @@ function TitleScreen({
         </div>
       </div>
       <p className="pixel-font text-[8px] opacity-70">
-        Setas / WASD para andar · A, Enter ou E para interagir
+        Setas / WASD para andar · A, Enter ou E para falar · Chegue perto de uma porta para abri-la e passe por cima para entrar
       </p>
     </div>
   );
