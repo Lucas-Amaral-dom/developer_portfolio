@@ -552,6 +552,18 @@ export function createGame(root: HTMLElement, cb: GameCallbacks): GameHandle {
         const near = Math.hypot(d.x - ptxD, d.y - ptyD) < 1.8;
         d.open += ((near ? 1 : 0) - d.open) * Math.min(1, k.dt() * 8);
         d.apply(d.open);
+        d.shadow.opacity = d.open * 0.65;
+      }
+
+      // auto-enter when the player walks onto an open door shadow tile
+      const pcol = Math.floor(player.pos.x / TILE);
+      const prow = Math.floor(player.pos.y / TILE);
+      for (const exit of scene.exits) {
+        const d = doors.find((door) => door.x === exit.x && door.y === exit.y);
+        if (pcol === exit.x && prow === exit.y && d && d.open > 0.5) {
+          goTo(exit.to);
+          return;
+        }
       }
 
       if (state.paused) return;
